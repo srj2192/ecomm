@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+<script>
+    {% block jquery %}
+
+    	function setPrice(){
+    		var price=$(".variation_select option:selected").attr("data-price");
+    		var sale_price=$(".variation_select option:selected").attr("data-sale-price");
+	    	if(sale_price!=""&&sale_price!="None"&&sale_price!=null) {
+	    			$("#price").html("<h3>INR "+sale_price+" <small class='og-price'> INR "+price+"</small></h3>");
+	    	}
+	    	else {
+	   			$("#price").html("INR "+price);
+	   		}
+	   	}
+	   	setPrice();
+    	$(".variation_select").change(function(){
+    		setPrice();
+    	});
+
+    	
+    	$("#submit-btn").click(function(event){
+    		event.preventDefault();
+    		var formData=$("#add-form").serialize();
+    		console.log(formData);
+	    	$.ajax({
+	    		type:"GET",		//Post
+	    		url:"{% url 'cart' %}",
+	    		data:formData,
+	    		success: function(data){
+	    			showFlashMessage(data.flash_message);
+	    			updateCartItemCount();
+	    		},
+	    		error: function(response,error){
+	    			// console.log(response)
+	    			// console.log(error)
+	    			$("#add-form").submit()
+	    		},
+	    	})
+   		})
+
+     {% endblock %}
+</script>
+
+
+{% block content %}
+
+<div class="row>">
+	<div class="col-sm-8">
+		<h2>{{ object }}</h2>
+		{% if object.get_image_url %}
+		<div>
+			<img class="img-responsive" src="{{ object.get_image_url }}"/>
+		</div>
+		{% endif %}
+		<p class="lead">
+			{{ object.description }}
+		</p>
+	</div>
+	<!-- Product sidebar -->
+	<div class="col-sm-4">
+		<form id='add-form' method="GET" action="{% url 'cart' %}" target="_blank">
+			<p class="lead" id='jquery-message'>
+
+			</p>
+			{% if object.variation_set.count > 1 %}
+			<h3 id="price">INR {{ object.variation_set.first.price }}</h3>
+			<select name="item" class="form-control variation_select">
+				{% for vari_obj in object.variation_set.all %}
+				<option data-sale-price="{{ vari_obj.sale_price|intcomma }}" data-price="{{ vari_obj.price|intcomma }}" value="{{ vari_obj.id }}">{{ vari_obj }}</option>
+				{% endfor %}
+			</select>
+			{% else %}
+				<input type="hidden" name='item' value='{{ object.variation_set.first.id }}' />
+				<h3>
+					{% if object.variation_set.first.sale_price %}
+						INR {{ object.variation_set.first.sale_price }}
+						<small class="og-price"> INR {{ object.variation_set.first.price }}</small>
+					{% else %}
+						INR {{ object.variation_set.first.price }}
+					{% endif %}
+				</h3>
+			{% endif %}
+			<br/>
+			<p class="lead">Quantity:
+			<input class="form-control" type="number" name='qty' value='1'></p>
+			<br/>
+			<input id='submit-btn' type='submit' value="Add to Cart" class="btn btn-default"/>
+			</form>
+		<hr/>
+
+
+		<!-- sharing -->
+		<p class="text-center">
+			<i class="fa fa-share-alt fa-3x"></i>
+			<p class="lead text-center">Share</p>
+			<p class="text-center">
+				<a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri }}" target="_blank">
+					<i class="fa fa-facebook-square fa-3x" style="color:#3b5998" title="facebook"></i>
+				</a>
+				<a href="https://twitter.com/home?status=Visit%20this%20link%20to%20get%20discounts%3A%20{{ request.build_absolute_uri }}" target="_blank">
+					<i class="fa fa-twitter-square fa-3x" style="color:#4099FF"  title="twitter"></i>
+				</a>
+				<a href="https://www.linkedin.com/shareArticle?mini=true&url={{ request.build_absolute_uri }}&title={{ request.build_absolute_uri }}&summary=Visit%20this%20link%20to%20get%20discounts%3A%20&source={{ request.build_absolute_uri }}" target="_blank">
+					<i class="fa fa-linkedin-square fa-3x" style="color:#007bb6" title="linkedin"></i>
+				</a>
+				<a href="http://reddit.com/submit?url={{ request.build_absolute_uri }}&title=Visit%20this%20link%20to%20get%20discounts%3A%20" target="_blank">
+					<i class="fa fa-reddit-square fa-3x" style="color:#900020" title="reddit"></i>
+				</a>
+				<a href="https://plus.google.com/share?url={{ request.build_absolute_uri }}" target="_blank">
+					<i class="fa fa-google-plus-square fa-3x" style="color:#d34836" title="google plus"></i>
+				</a>
+			</p>
+		</p>
+		<!-- Sharing -->
+		<hr/>
+		<h4>Related Products</h4>
+		<div class="row">
+			{% for products in related %}
+				<div class="col-xs-6">
+					{% include 'products/product_thumbnail.html' with product=products price="True" %}
+		    	</div>
+		    	{% cycle '' '</div><div class="row">' %}
+			{% endfor %}
+		</div>
+
+	</div>
+	<!--End of Product sidebar -->
+</div>
+{% endblock %}

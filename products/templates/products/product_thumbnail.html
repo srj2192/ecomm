@@ -1,0 +1,10 @@
+<div class="thumbnail text-center">
+	<h4><a href="{{ products.get_absolute_url }}" target="_blank">{{ products }}</a></h4>
+	{% if products.get_image_url %}
+		<a href="{{ products.get_absolute_url }}" target="_blank"><img id='img' class="img-responsive" src="{{ products.get_image_url }}" alt="{{ products }}"/></a><br/>
+	{% endif %}
+
+	{% if price == "True" %}
+		INR {{ product.variation_set.first.get_html_price }}
+	{% endif %}
+</div>

@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+<script>
+    {% block jquery %}
+    $(".item-qty").change(function () {
+        //$(this).next(".btn-update").fadeIn();
+        var item = $(this).prev("input[type='hidden']").val();
+        var qty = $(this).val();
+        var data = {
+            item: item,
+            qty: qty,
+        }
+        console.log(data);
+        $.ajax({
+            type: "GET",		//Post
+            url: "{% url 'cart' %}",
+            data: data,
+            success: function (data) {
+                $("#jquery-message").text("Added " + data.item_added + " Deleted " + data.deleted);
+                if (data.deleted) {
+                    $("#item-" + item).fadeOut();
+                    $("#subtotal").text(data.subtotal);
+                    $("#taxtotal").text(data.tax_total);
+                    $("#carttotal").text(data.cart_total);
+                }
+                else {
+                    $("#item-line-total-" + item).text(data.line_total);
+                    $("#subtotal").text(data.subtotal);
+                    $("#taxtotal").text(data.tax_total);
+                    $("#carttotal").text(data.cart_total);
+                }
+                if (data.total_items == 0) {
+                    $(".table").fadeOut();
+                    var template = '{% include "carts/empty_cart.html" %}'
+                    $(".main-content").html(template);
+                }
+                showFlashMessage(data.flash_message);
+                updateCartItemCount();
+            },
+            error: function (response, error) {
+                // console.log(response)
+                // console.log(error)
+                $("#add-form").submit()
+            },
+        })
+    });
+    {%
+        endblock %
+    }
+</script>
+
+
+{% block content %}
+<div class="row main-content">
+    {% if object.cartitem_set.count < 1 %}
+    {% include 'carts/empty_cart.html' %}
+    {% else %}
+    <table class="table">
+        {% for item in object.cartitem_set.all %}
+        <tr id="item-{{ item.item.id }}">
+            <td>{{ item.item.get_title }}</td>
+            <td>
+                <form action='.' method="GET"><input type="hidden" name='item' value='{{ item.item.id }}'/><input
+                        type="number" class="item-qty" name='qty' value='{{ item.quantity }}'/><input type="submit"
+                                                                                                      class="btn-update btn btn-link"
+                                                                                                      value="Update Item"
+                                                                                                      style="display:none"/>
+            </td>
+            <td id="item-line-total-{{ item.item.id }}">INR {{ item.line_item_total|intcomma }}</td>
+            <td class="text-right"><a href="{{ item.remove }}">x</a></td>
+            </form>
+        </tr>
+        {% endfor %}
+        <tr>
+            <td colspan='4' class='text-right'><strong>Subtotal:</strong> INR <span id="subtotal">{{ object.subtotal|intcomma }}</span>
+            </td>
+        </tr>
+        <tr>
+            <td colspan='4' class='text-right' style="border:black"><strong>Tax:</strong> INR <span id="taxtotal">{{ object.tax_total|intcomma }}</span>
+            </td>
+        </tr>
+        <tr>
+            <td colspan='4' class='text-right'><strong>Total: </strong>INR <span id="carttotal">{{ object.total|intcomma }}</span>
+            </td>
+        </tr>
+    </table>
+    {% endif %}
+</div>
+{% endblock %}
